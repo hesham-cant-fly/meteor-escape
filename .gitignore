@@ -1,0 +1,6 @@
+.cache/
+.config/
+bin/
+obj/
+Content/
+.dir-locals.el
