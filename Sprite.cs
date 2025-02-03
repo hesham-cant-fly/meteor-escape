@@ -1,53 +1,71 @@
 using System;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using Raylib_cs;
 
 namespace meteor_escape;
 
 public class Sprite
 {
     protected Vec2 _pos;
-    protected Vec2 _vel;
+    protected Vec2 _vel = new Vec2(Program.rnd.Next(-50, 50), Program.rnd.Next(-50, 50));
     protected float _rot;
-    protected Texture2D _texture;
+    private bool active = false;
 
     public Vec2 Pos { get => _pos; set => _pos = value; }
     public Vec2 Vel { get => _vel; set => _vel = value; }
     public float Rot { get => _rot; set => _rot = value; }
-    public Texture2D Texture { get => _texture; protected set => _texture = value; }
-    public Vector2 Origin { get => _texture.Bounds.Size.ToVector2() * 0.5f; }
-    public Rectangle Rect { get => new Rectangle((int)Pos.X, (int)Pos.Y, 10, 10); }
-    public Vector2 Dim { get => new Vector2(Rect.Width, Rect.Height); }
+    public System.Drawing.RectangleF Rect { get => new(Pos.X, Pos.Y, 20, 20); }
 
-    public Sprite(Texture2D texture)
+    public Sprite()
     {
-        this._texture = texture;
     }
 
-    public virtual void Update(GameTime gameTime)
+    public virtual void Update()
     {
-        InputHandling(gameTime);
+        active = false;
+        if (Pos.X < 0)
+        {
+            _vel.X *= -1;
+            _pos.X = 0;
+        }
+        if (Pos.X + Rect.Width > Raylib.GetScreenWidth())
+        {
+            _vel.X *= -1;
+            _pos.X = Raylib.GetScreenWidth() - Rect.Width;
+        }
+        if (Pos.Y < 0)
+        {
+            _vel.Y *= -1;
+            _pos.Y = 0;
+        }
+        if (Pos.Y + Rect.Height > Raylib.GetScreenHeight())
+        {
+            _vel.Y *= -1;
+            _pos.Y = Raylib.GetScreenHeight() - Rect.Height;
+        }
+        Pos += Vel * Raylib.GetFrameTime();
+        InputHandling();
     }
 
-    public virtual void InputHandling(GameTime gameTime) { }
+    public virtual void InputHandling() { }
 
-    public virtual void Draw(GameTime gameTime)
+    public virtual void Draw()
     {
-        Globals.spriteBatch.Draw(
-            _texture,
-            Rect,
-            null,
-            Color.Black,
-            Rot,
-            Origin,
-            SpriteEffects.None,
-            0F
+        Raylib.DrawRectangle(
+            (int)Pos.X, (int)Pos.Y,
+            (int)Rect.Width, (int)Rect.Height,
+            active ? Color.Blue : Color.Black
         );
+    }
+
+    public bool IsCollidingWith(Sprite other)
+    {
+        return Rect.IntersectsWith(other.Rect);
     }
 
     // Events
     public virtual void OnCollide(Sprite other)
     {
-        Console.WriteLine("Collided");
+        active = true;
+        // Console.WriteLine("Collided");
     }
 }

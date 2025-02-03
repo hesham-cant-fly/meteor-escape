@@ -2,35 +2,62 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
-using Microsoft.Xna.Framework;
+using Raylib_cs;
 
 namespace meteor_escape;
 
 public class World
 {
-    private QuadTree _sprites = new QuadTree(
-        new RectangleF(
-            -0, -0,
-            (float)(Globals.graphicsDevice.Viewport.Bounds.Width * 2.4),
-            (float)(Globals.graphicsDevice.Viewport.Bounds.Height * 2.1)
-        )
-    );
+    private LinkedList<Sprite> _sprites = new();
+    private QuadTree _currentQTree;
 
-    public void AddSprite(Sprite sprite) => _sprites.Insert(sprite);
+    public void AddSprite(Sprite sprite) => _sprites.AddLast(sprite);
 
-    public void Step(GameTime gameTime)
+    public void Update()
     {
+        _currentQTree = new QuadTree(new RectangleF(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight()));
         foreach (var sprite in _sprites)
-            sprite.Update(gameTime);
+        {
+            sprite.Update();
+            _currentQTree.Insert(sprite);
+        }
+
+        /// O(n²) algorithm on 1000 object (very slow) 24 FPS
+        // foreach (var sprite in _sprites)
+        // {
+        //     foreach (var other in _sprites)
+        //     {
+        //         if (other != sprite && sprite.IsCollidingWith(other))
+        //         {
+        //             sprite.OnCollide(sprite);
+        //         }
+        //     }
+        // }
+
+        /// O(k) algorithm on 1000 object (fast) 60 FPS
+        foreach (var sprite in _currentQTree)
+        {
+            RectangleF range = new RectangleF(sprite.Pos.X, sprite.Pos.Y, (float)(sprite.Rect.Width * 3), (float)(sprite.Rect.Height * 3));
+            range.X -= range.Width / 2;
+            range.Y -= range.Height / 2;
+            List<Sprite> others = _currentQTree.Query(range);
+            foreach (var other in others)
+            {
+                if (other != sprite && sprite.IsCollidingWith(other))
+                {
+                    sprite.OnCollide(sprite);
+                }
+            }
+        }
     }
 
-    public void Draw(GameTime gameTime)
+    public void Draw()
     {
         foreach (var sprite in _sprites)
         {
-            sprite.Draw(gameTime);
+            sprite.Draw();
         }
-        _sprites.Draw();
+        _currentQTree.Draw();
     }
 }
 
@@ -46,20 +73,20 @@ class QuadTree : IEnumerable<Sprite>
     // |      |      |
     // +------+------+
     private List<Sprite> _elements = new();
-    private const uint _maxDepth = 6;
+    private const uint _maxDepth = 5;
     private readonly uint _depth;
     private readonly uint _cap;
     private readonly RectangleF _bounds;
-    private bool _devided = false;
-    private QuadTree? _a = null;
-    private QuadTree? _b = null;
-    private QuadTree? _c = null;
-    private QuadTree? _d = null;
+    private QuadTree _a = null;
+    private QuadTree _b = null;
+    private QuadTree _c = null;
+    private QuadTree _d = null;
 
     public RectangleF Bounds { get => _bounds; }
+    public bool Devided { get => (_a != null) && (_b != null) && (_c != null) && (_d != null); }
 
     public QuadTree(RectangleF bounds)
-        : this(bounds, 2, 0)
+        : this(bounds, 3, 0)
     { }
 
     public QuadTree(RectangleF bounds, uint cap, uint depth)
@@ -69,23 +96,58 @@ class QuadTree : IEnumerable<Sprite>
         this._depth = depth;
     }
 
+    public List<Sprite> Query(RectangleF range, List<Sprite> found = null)
+    {
+        if (found == null)
+        {
+            found = new();
+        }
+
+        if (!_bounds.IntersectsWith(range))
+        {
+            return found;
+        }
+
+        if (Devided)
+        {
+            if (_a._bounds.IntersectsWith(range)) _a.Query(range, found);
+            if (_b._bounds.IntersectsWith(range)) _b.Query(range, found);
+            if (_c._bounds.IntersectsWith(range)) _c.Query(range, found);
+            if (_d._bounds.IntersectsWith(range)) _d.Query(range, found);
+        }
+        else
+        {
+            foreach (var sprite in _elements)
+            {
+                if (range.IntersectsWith(sprite.Rect))
+                {
+                    found.Add(sprite);
+                }
+            }
+        }
+        return found;
+    }
+
     public bool Insert(Sprite sprite)
     {
-        if (!Bounds.Contains(sprite.Pos))
+        if (!Bounds.IntersectsWith(sprite.Rect))
         {
             return false;
         }
 
-        if (_devided)
+        if (Devided)
         {
-            return _a.Insert(sprite) || _b.Insert(sprite) || _c.Insert(sprite) || _d.Insert(sprite);
+            return _a.Insert(sprite)
+                || _b.Insert(sprite)
+                || _c.Insert(sprite)
+                || _d.Insert(sprite);
         }
 
         _elements.Add(sprite);
 
         if (_elements.Count > _cap && _depth < _maxDepth)
         {
-            if (!_devided)
+            if (!Devided)
             {
                 Split();
             }
@@ -95,18 +157,17 @@ class QuadTree : IEnumerable<Sprite>
 
     public void Draw()
     {
-        Globals.spriteBatch.DrawString(
-            Globals.hudFont,
+        Raylib.DrawText(
             $"{_depth}",
-            new Vector2(Bounds.X + Bounds.Width / 2, Bounds.Y + Bounds.Height / 2),
-            Microsoft.Xna.Framework.Color.Blue
+            (int)(Bounds.X + Bounds.Width / 2) - 4, (int)(Bounds.Y + Bounds.Height / 2) - 7,
+            15, Raylib_cs.Color.DarkBrown
         );
-        Globals.DrawOutlineRectangle(
-            new Microsoft.Xna.Framework.Rectangle((int)Bounds.X, (int)Bounds.Y, (int)Bounds.Width, (int)Bounds.Height),
-            Microsoft.Xna.Framework.Color.White,
-            1
+        Raylib.DrawRectangleLines(
+            (int)Bounds.X, (int)Bounds.Y,
+            (int)Bounds.Width, (int)Bounds.Height,
+            Raylib_cs.Color.Black
         );
-        if (_devided)
+        if (Devided)
         {
             _a.Draw();
             _b.Draw();
@@ -131,7 +192,6 @@ class QuadTree : IEnumerable<Sprite>
         }
 
         _elements.Clear();
-        _devided = true;
     }
 
     public IEnumerator<Sprite> GetEnumerator()
@@ -139,7 +199,7 @@ class QuadTree : IEnumerable<Sprite>
         foreach (var sprite in _elements)
             yield return sprite;
 
-        if (_devided)
+        if (Devided)
         {
             foreach (Sprite sprite in _a)
                 yield return sprite;

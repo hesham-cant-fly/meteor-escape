@@ -1,6 +1,6 @@
 using System;
 using System.Drawing;
-using Microsoft.Xna.Framework;
+using System.Numerics;
 
 namespace meteor_escape;
 
@@ -97,8 +97,6 @@ public struct Vec2(float x, float y)
     public static Vec2 operator *(Vec2 a, float scaleFactor) => new Vec2(a.X * scaleFactor, a.Y * scaleFactor);
     public static bool operator ==(Vec2 a, Vec2 b) => a.X == b.X && b.Y == b.Y;
     public static bool operator !=(Vec2 a, Vec2 b) => a.X != b.X && b.Y != b.Y;
-    public static implicit operator Vector2(Vec2 self) => new Vector2(self.X, self.Y);
-    public static implicit operator Vec2(Vector2 self) => new Vec2(self.X, self.Y);
     public static implicit operator Vec2(System.Numerics.Vector2 a) => new Vec2(a.X, a.Y);
     public static implicit operator PointF(Vec2 self) => new PointF(self.X, self.Y);
 
@@ -117,15 +115,10 @@ public struct Vec2(float x, float y)
             x = ((Vec2)obj).X;
             y = ((Vec2)obj).Y;
         }
-        else if (obj is Vector2)
+        else if (obj is System.Numerics.Vector2)
         {
             x = ((Vector2)obj).X;
             y = ((Vector2)obj).Y;
-        }
-        else if (obj is System.Numerics.Vector2)
-        {
-            x = ((System.Numerics.Vector2)obj).X;
-            y = ((System.Numerics.Vector2)obj).Y;
         }
         else
         {
