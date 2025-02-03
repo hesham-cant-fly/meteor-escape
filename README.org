@@ -1,4 +1,8 @@
 #+title: My First Game In C#
 #+author: hesham can't fly
 
-My first game in C# :D
+** Resources
+Here I'll link to some useful resources
+- [[https://www.youtube.com/@codingmath][Coding Math Channel]]: I've watched his video a while ago and it's pretty interesting to watch, his way of explaining math/physics topics is just perfect. For some reason he just despaired and stopped posting videos for some reason. I don't know who he is but I wish that he's just doing alright.
+- [[https://www.sevenson.com.au/programming/sat/][SAT]] Although in the source code i didn't implement a SAT collision detection algorithm, but i actually did implement it before i decided to push this project to github.
+- The Coding Train *Quadtree Collisions* [[https://youtu.be/OJxEcs0w_kE][P1]] [[https://youtu.be/QQx_NmCIuCY][P2]] [[https://www.youtube.com/watch?v=z0YFFg_nBjw][P3]]
