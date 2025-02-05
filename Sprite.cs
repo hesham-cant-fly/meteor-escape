@@ -5,15 +5,16 @@ namespace meteor_escape;
 
 public class Sprite
 {
+    private const int MAX_SPEED = 120;
     protected Vec2 _pos;
-    protected Vec2 _vel = new Vec2(Program.rnd.Next(-50, 50), Program.rnd.Next(-50, 50));
+    protected Vec2 _vel = new Vec2(Program.rnd.Next(-MAX_SPEED, MAX_SPEED), Program.rnd.Next(-MAX_SPEED, MAX_SPEED));
     protected float _rot;
     private bool active = false;
 
     public Vec2 Pos { get => _pos; set => _pos = value; }
     public Vec2 Vel { get => _vel; set => _vel = value; }
     public float Rot { get => _rot; set => _rot = value; }
-    public System.Drawing.RectangleF Rect { get => new(Pos.X, Pos.Y, 20, 20); }
+    public System.Drawing.RectangleF Rect { get => new(Pos.X, Pos.Y, 5, 5); }
 
     public Sprite()
     {
@@ -66,6 +67,7 @@ public class Sprite
     public virtual void OnCollide(Sprite other)
     {
         active = true;
+        // Globals.world.RemoveAt(otherIndex);
         // Console.WriteLine("Collided");
     }
 }

@@ -24,7 +24,7 @@ public class Game
         Globals.world = new World();
 
         var rnd = new Random();
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 1000; i++)
         {
             var spr = new Sprite();
             spr.Pos = new Vec2(rnd.Next(Raylib.GetScreenWidth()), rnd.Next(Raylib.GetScreenHeight()));

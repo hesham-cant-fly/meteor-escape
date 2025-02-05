@@ -8,10 +8,10 @@ namespace meteor_escape;
 
 public class World
 {
-    private LinkedList<Sprite> _sprites = new();
+    private List<Sprite> _sprites = new();
     private QuadTree _currentQTree;
 
-    public void AddSprite(Sprite sprite) => _sprites.AddLast(sprite);
+    public void AddSprite(Sprite sprite) => _sprites.Add(sprite);
 
     public void Update()
     {
@@ -35,15 +35,16 @@ public class World
         // }
 
         /// O(k) algorithm on 1000 object (fast) 60 FPS
-        foreach (var sprite in _currentQTree)
+        foreach (var leaf in _currentQTree)
         {
+            var sprite = leaf.Sprite;
             RectangleF range = new RectangleF(sprite.Pos.X, sprite.Pos.Y, (float)(sprite.Rect.Width * 3), (float)(sprite.Rect.Height * 3));
             range.X -= range.Width / 2;
             range.Y -= range.Height / 2;
-            List<Sprite> others = _currentQTree.Query(range);
+            var others = _currentQTree.Query(range);
             foreach (var other in others)
             {
-                if (other != sprite && sprite.IsCollidingWith(other))
+                if (other.Sprite != sprite && sprite.IsCollidingWith(other.Sprite))
                 {
                     sprite.OnCollide(sprite);
                 }
@@ -59,9 +60,25 @@ public class World
         }
         _currentQTree.Draw();
     }
+
+    /// swapback array c#
+    public void RemoveAt(int i)
+    {
+        if (i < _sprites.Count && i >= 0)
+        {
+            Console.WriteLine($"{i}, {_sprites.Count}");
+            Sprite last = _sprites[^1];
+            _sprites[i] = last;
+            _sprites.RemoveAt(_sprites.Count - 1);
+        }
+        else
+        {
+            throw new IndexOutOfRangeException();
+        }
+    }
 }
 
-class QuadTree : IEnumerable<Sprite>
+class QuadTree : IEnumerable<QuadTree.Leaf>
 {
     // +------+------+
     // |      |      |
@@ -72,18 +89,23 @@ class QuadTree : IEnumerable<Sprite>
     // |  C   |  D   |
     // |      |      |
     // +------+------+
-    private List<Sprite> _elements = new();
-    private const uint _maxDepth = 5;
-    private readonly uint _depth;
-    private readonly uint _cap;
-    private readonly RectangleF _bounds;
+    private const uint _maxDepth = 10;
     private QuadTree _a = null;
     private QuadTree _b = null;
     private QuadTree _c = null;
     private QuadTree _d = null;
+    private List<Leaf> _elements = new();
+    private readonly RectangleF _bounds;
+    private readonly uint _depth;
+    private readonly uint _cap;
 
     public RectangleF Bounds { get => _bounds; }
     public bool Devided { get => (_a != null) && (_b != null) && (_c != null) && (_d != null); }
+
+    public struct Leaf(Sprite sprite)
+    {
+        public Sprite Sprite { get; set; } = sprite;
+    }
 
     public QuadTree(RectangleF bounds)
         : this(bounds, 3, 0)
@@ -96,7 +118,7 @@ class QuadTree : IEnumerable<Sprite>
         this._depth = depth;
     }
 
-    public List<Sprite> Query(RectangleF range, List<Sprite> found = null)
+    public List<Leaf> Query(RectangleF range, List<Leaf> found = null)
     {
         if (found == null)
         {
@@ -117,15 +139,20 @@ class QuadTree : IEnumerable<Sprite>
         }
         else
         {
-            foreach (var sprite in _elements)
+            foreach (var leaf in _elements)
             {
-                if (range.IntersectsWith(sprite.Rect))
+                if (range.IntersectsWith(leaf.Sprite.Rect))
                 {
-                    found.Add(sprite);
+                    found.Add(leaf);
                 }
             }
         }
         return found;
+    }
+
+    public bool Insert(Leaf leaf)
+    {
+        return Insert(leaf.Sprite);
     }
 
     public bool Insert(Sprite sprite)
@@ -143,7 +170,7 @@ class QuadTree : IEnumerable<Sprite>
                 || _d.Insert(sprite);
         }
 
-        _elements.Add(sprite);
+        _elements.Add(new Leaf(sprite));
 
         if (_elements.Count > _cap && _depth < _maxDepth)
         {
@@ -186,29 +213,29 @@ class QuadTree : IEnumerable<Sprite>
         _c = new QuadTree(new RectangleF(_bounds.X, _bounds.Y + halfHeight, halfWidth, halfHeight), _cap, _depth + 1);
         _d = new QuadTree(new RectangleF(_bounds.X + halfWidth, _bounds.Y + halfHeight, halfWidth, halfHeight), _cap, _depth + 1);
 
-        foreach (Sprite element in _elements)
+        foreach (var leaf in _elements)
         {
-            if (_a.Insert(element) || _b.Insert(element) || _c.Insert(element) || _d.Insert(element)) { }
+            if (_a.Insert(leaf) || _b.Insert(leaf) || _c.Insert(leaf) || _d.Insert(leaf)) { }
         }
 
         _elements.Clear();
     }
 
-    public IEnumerator<Sprite> GetEnumerator()
+    public IEnumerator<Leaf> GetEnumerator()
     {
-        foreach (var sprite in _elements)
-            yield return sprite;
+        foreach (var leaf in _elements)
+            yield return leaf;
 
         if (Devided)
         {
-            foreach (Sprite sprite in _a)
-                yield return sprite;
-            foreach (Sprite sprite in _b)
-                yield return sprite;
-            foreach (Sprite sprite in _c)
-                yield return sprite;
-            foreach (Sprite sprite in _d)
-                yield return sprite;
+            foreach (var leaf in _a)
+                yield return leaf;
+            foreach (var leaf in _b)
+                yield return leaf;
+            foreach (var leaf in _c)
+                yield return leaf;
+            foreach (var leaf in _d)
+                yield return leaf;
         }
     }
 
