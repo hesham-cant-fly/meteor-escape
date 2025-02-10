@@ -1,6 +1,8 @@
 ﻿using System;
-using System.Drawing;
 using Raylib_cs;
+
+// (setq catppuccin-flavor 'frappe)
+// (catppuccin-reload)
 
 namespace meteor_escape
 {
@@ -13,8 +15,10 @@ namespace meteor_escape
             Raylib.SetConfigFlags(ConfigFlags.ResizableWindow);
             Raylib.InitWindow(800, 700, "Meteor Escape");
             Raylib.SetTargetFPS(60);
+            Raylib.HideCursor();
 
             game.Initialize();
+            Globals.state = new();
 
             while (!Raylib.WindowShouldClose())
             {
@@ -25,6 +29,8 @@ namespace meteor_escape
                 game.Draw();
                 Raylib.DrawFPS(0, 0);
                 Raylib.EndDrawing();
+
+                game.PostProcess();
             }
 
             Raylib.CloseWindow();

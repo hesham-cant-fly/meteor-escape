@@ -1,10 +1,11 @@
+using Raylib_cs;
 
 namespace meteor_escape;
 
-internal class HealthBar
+public class HealthBar
 {
     private float _hp;
-    private float _maxHP;
+    public float MaxHP { get; set; }
 
     public float HP
     {
@@ -18,38 +19,30 @@ internal class HealthBar
             }
         }
     }
-    public float MaxHP { get => _maxHP; set => _maxHP = value; }
-    public float Percentage { get => _hp / _maxHP; }
+    public float Racio { get => _hp / MaxHP; }
 
     public HealthBar(float maxHP)
     {
-        _hp = _maxHP = maxHP;
+        _hp = MaxHP = maxHP;
     }
 
     public void Draw(Vec2 offset)
     {
-        // var maxWidth = 60;
-        // var maxHeight = 15;
-        // var gap = 6;
-        throw new System.Exception("Unimplemented");
+        const int maxWidth = 60;
+        const int maxHeight = 15;
+        const int gap = 4;
         /// Background
-        // Globals.spriteBatch.Draw(
-        //     Globals.enemieTexture,
-        //     new Rectangle(
-        //         (int)(offset.X - maxWidth / 2), (int)(offset.Y - maxHeight / 2),
-        //         maxWidth, maxHeight
-        //     ),
-        //     Color.Gray
-        // );
+        Raylib.DrawRectangle(
+            (int)(offset.X - maxWidth / 2), (int)(offset.Y - maxHeight / 2),
+            maxWidth, maxHeight,
+            Color.Gray
+        );
 
         /// Forground
-        // Globals.spriteBatch.Draw(
-        //     Globals.enemieTexture,
-        //     new Rectangle(
-        //         (int)(offset.X - maxWidth / 2 + gap / 2), (int)(offset.Y - maxHeight / 2 + gap / 2),
-        //         (int)((maxWidth - gap) * Percentage), maxHeight - gap
-        //     ),
-        //     Color.Green
-        // );
+        Raylib.DrawRectangle(
+            (int)(offset.X - maxWidth / 2 + gap / 2), (int)(offset.Y - maxHeight / 2 + gap / 2),
+            (int)((maxWidth - gap) * Racio), maxHeight - gap,
+            Color.Green
+        );
     }
 }

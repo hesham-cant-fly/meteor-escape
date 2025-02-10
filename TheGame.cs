@@ -5,17 +5,14 @@ namespace meteor_escape;
 
 public class Game
 {
-    // private float _enemieSummonTimer = 0F;
-    public static ulong _collisionDetection = 0L;
     private float _timer = 0;
+    private Timers.EnemieSpawner _spawner = new(10, true);
 
     public Game()
-    {
-    }
+    { }
 
     public void Initialize()
     {
-        Globals.frameCounter = new();
         LoadContent();
     }
 
@@ -23,31 +20,28 @@ public class Game
     {
         Globals.world = new World();
 
-        var rnd = new Random();
-        for (int i = 0; i < 1000; i++)
-        {
-            var spr = new Sprite();
-            spr.Pos = new Vec2(rnd.Next(Raylib.GetScreenWidth()), rnd.Next(Raylib.GetScreenHeight()));
-            Globals.world.AddSprite(
-                spr
-            );
-        }
+        Globals.world.AddSprite(new Player());
     }
 
     public void Update()
     {
-        _collisionDetection = 0L;
-        float dt = Raylib.GetFrameTime();
-        // Globals.frameCounter.Update(dt);
-        _timer -= dt;
+        _timer -= Raylib.GetFrameTime();
 
+        _spawner.Progress();
         Globals.world.Update();
     }
 
     public void Draw()
     {
         Globals.world.Draw();
+        var mousePos = Raylib.GetMousePosition();
+        Raylib.DrawCircle(
+            (int)mousePos.X, (int)mousePos.Y,
+            5, new Color(186, 186, 186, 200)
+        );
     }
+
+    public void PostProcess() => Globals.world.PostProcess();
 
     public static Vec2 GetRandomInScreenPosition()
     {

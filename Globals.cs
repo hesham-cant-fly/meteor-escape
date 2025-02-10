@@ -4,8 +4,7 @@ namespace meteor_escape;
 
 public class Globals
 {
-    public static FrameCounter frameCounter;
-
+    public static GameState state;
     public static Game game;
     public static World world;
 

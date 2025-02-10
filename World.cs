@@ -6,20 +6,62 @@ using Raylib_cs;
 
 namespace meteor_escape;
 
-public class World
+public interface IProcessable
 {
-    private List<Sprite> _sprites = new();
-    private QuadTree _currentQTree;
+    public void Update();
+    public void Draw();
+}
 
-    public void AddSprite(Sprite sprite) => _sprites.Add(sprite);
+public class Entity
+{
+    public Sprite UserData;
+    public bool Disabled { get; private set; }
+
+    public Entity(Sprite userData)
+    {
+        this.UserData = userData;
+        this.Disabled = false;
+    }
+
+    public void Disable()
+    {
+        Disabled = true;
+    }
 
     public void Update()
     {
+        UserData.Update();
+    }
+
+    public void Draw()
+    {
+        UserData.Draw();
+    }
+
+    public override string ToString()
+    {
+        return $"Entity({Disabled})";
+    }
+}
+public class World
+{
+    private List<int> _removedEntitiesInd = new();
+    private List<Entity> _entities = new();
+    private QuadTree _currentQTree;
+
+    public void AddSprite(Sprite sprite) => _entities.Add(new(sprite));
+
+    public void Update()
+    {
+        _removedEntitiesInd.Clear();
         _currentQTree = new QuadTree(new RectangleF(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight()));
-        foreach (var sprite in _sprites)
+        for (int i = 0; i < _entities.Count; i++)
         {
-            sprite.Update();
-            _currentQTree.Insert(sprite);
+            Entity entity = _entities[i];
+            if (entity.Disabled)
+                continue;
+            entity.Update();
+            _currentQTree.Insert(entity.UserData, i);
         }
 
         /// O(n²) algorithm on 1000 object (very slow) 24 FPS
@@ -38,7 +80,9 @@ public class World
         foreach (var leaf in _currentQTree)
         {
             var sprite = leaf.Sprite;
-            RectangleF range = new RectangleF(sprite.Pos.X, sprite.Pos.Y, (float)(sprite.Rect.Width * 3), (float)(sprite.Rect.Height * 3));
+            RectangleF range = sprite.OriginRect;
+            range.Width *= 3;
+            range.Height *= 3;
             range.X -= range.Width / 2;
             range.Y -= range.Height / 2;
             var others = _currentQTree.Query(range);
@@ -46,7 +90,7 @@ public class World
             {
                 if (other.Sprite != sprite && sprite.IsCollidingWith(other.Sprite))
                 {
-                    sprite.OnCollide(sprite);
+                    sprite.OnCollide(leaf.Index, other.Index, other.Sprite);
                 }
             }
         }
@@ -54,27 +98,32 @@ public class World
 
     public void Draw()
     {
-        foreach (var sprite in _sprites)
+        foreach (var entity in _entities)
         {
-            sprite.Draw();
+            if (entity.Disabled) continue;
+            entity.Draw();
         }
         _currentQTree.Draw();
     }
 
-    /// swapback array c#
+    public void PostProcess()
+    {
+        var j = _entities.Count - 1;
+        foreach (var i in _removedEntitiesInd)
+        {
+            Entity last = _entities[j--];
+            _entities[i] = last;
+        }
+        foreach (var _ in _removedEntitiesInd)
+            _entities.RemoveAt(_entities.Count - 1);
+    }
+
     public void RemoveAt(int i)
     {
-        if (i < _sprites.Count && i >= 0)
-        {
-            Console.WriteLine($"{i}, {_sprites.Count}");
-            Sprite last = _sprites[^1];
-            _sprites[i] = last;
-            _sprites.RemoveAt(_sprites.Count - 1);
-        }
-        else
-        {
-            throw new IndexOutOfRangeException();
-        }
+        if (i < 0 || i >= _entities.Count) throw new IndexOutOfRangeException();
+
+        _entities[i].Disable();
+        _removedEntitiesInd.Add(i);
     }
 }
 
@@ -102,9 +151,10 @@ class QuadTree : IEnumerable<QuadTree.Leaf>
     public RectangleF Bounds { get => _bounds; }
     public bool Devided { get => (_a != null) && (_b != null) && (_c != null) && (_d != null); }
 
-    public struct Leaf(Sprite sprite)
+    public struct Leaf(Sprite sprite, int index)
     {
         public Sprite Sprite { get; set; } = sprite;
+        public int Index { get; set; } = index;
     }
 
     public QuadTree(RectangleF bounds)
@@ -141,7 +191,7 @@ class QuadTree : IEnumerable<QuadTree.Leaf>
         {
             foreach (var leaf in _elements)
             {
-                if (range.IntersectsWith(leaf.Sprite.Rect))
+                if (range.IntersectsWith(leaf.Sprite.OriginRect))
                 {
                     found.Add(leaf);
                 }
@@ -152,25 +202,25 @@ class QuadTree : IEnumerable<QuadTree.Leaf>
 
     public bool Insert(Leaf leaf)
     {
-        return Insert(leaf.Sprite);
+        return Insert(leaf.Sprite, leaf.Index);
     }
 
-    public bool Insert(Sprite sprite)
+    public bool Insert(Sprite sprite, int index)
     {
-        if (!Bounds.IntersectsWith(sprite.Rect))
+        if (!Bounds.IntersectsWith(sprite.OriginRect))
         {
             return false;
         }
 
         if (Devided)
         {
-            return _a.Insert(sprite)
-                || _b.Insert(sprite)
-                || _c.Insert(sprite)
-                || _d.Insert(sprite);
+            return _a.Insert(sprite, index)
+                || _b.Insert(sprite, index)
+                || _c.Insert(sprite, index)
+                || _d.Insert(sprite, index);
         }
 
-        _elements.Add(new Leaf(sprite));
+        _elements.Add(new Leaf(sprite, index));
 
         if (_elements.Count > _cap && _depth < _maxDepth)
         {

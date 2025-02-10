@@ -25,7 +25,7 @@ public struct Vec2(float x, float y)
     }
     public float Angle
     {
-        get => MathF.Atan2(X, Y);
+        get => MathF.Atan2(Y, X);
         set
         {
             float length = this.Length;
@@ -66,6 +66,12 @@ public struct Vec2(float x, float y)
         return MathF.Sqrt(DistanceTo2(v));
     }
 
+    public float AngleTo(Vec2 other)
+    {
+        var v = other - this;
+        return v.Angle;
+    }
+
     public void Normalize()
     {
         float length = this.Length;
@@ -97,8 +103,13 @@ public struct Vec2(float x, float y)
     public static Vec2 operator *(Vec2 a, float scaleFactor) => new Vec2(a.X * scaleFactor, a.Y * scaleFactor);
     public static bool operator ==(Vec2 a, Vec2 b) => a.X == b.X && b.Y == b.Y;
     public static bool operator !=(Vec2 a, Vec2 b) => a.X != b.X && b.Y != b.Y;
+    public static implicit operator Vector2(Vec2 self) => new Vector2(self.X, self.Y);
     public static implicit operator Vec2(System.Numerics.Vector2 a) => new Vec2(a.X, a.Y);
     public static implicit operator PointF(Vec2 self) => new PointF(self.X, self.Y);
+    public static Vec2 Zero { get => new Vec2(0, 0); }
+    public static Vec2 One { get => new Vec2(1, 1); }
+    public static Vec2 UnitX { get => new Vec2(1, 0); }
+    public static Vec2 UnitY { get => new Vec2(0, 1); }
 
     public override int GetHashCode()
     {

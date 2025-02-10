@@ -27,7 +27,7 @@ public static class Extensions
     {
         Raylib.DrawRectangleLinesEx(
             new Raylib_cs.Rectangle(rect.X, rect.Y, rect.Width, rect.Height),
-            (float)4.0, color
+            (float)2.0, color
         );
     }
 
