@@ -1,6 +1,6 @@
 using Raylib_cs;
 
-namespace meteor_escape.Timers;
+namespace meteor_escape;
 
 public abstract class Timer
 {

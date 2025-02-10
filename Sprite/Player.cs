@@ -3,36 +3,6 @@ using Raylib_cs;
 
 namespace meteor_escape;
 
-public class ImmunityFrames
-{
-    private int _f;
-    private int _maxF;
-
-    public ImmunityFrames(int maxF)
-    {
-        this._f = 0;
-        this._maxF = maxF;
-    }
-
-    public void Activate()
-    {
-        _f = _maxF;
-    }
-
-    public void Progress()
-    {
-        if (_f >= 0)
-        {
-            _f -= 1;
-        }
-    }
-
-    public bool IsImmune()
-    {
-        return _f > 0;
-    }
-}
-
 public class Player : Sprite
 {
     protected Vec2 _acc = Vec2.One * 70;
@@ -48,7 +18,7 @@ public class Player : Sprite
     {
         Console.WriteLine(OriginRect.ToString());
         this.Health = new HealthBar(100);
-        this.Imf = new ImmunityFrames(10);
+        this.Imf = new ImmunityFrames(20);
         this.Pos = new Vec2(
             Raylib.GetScreenWidth() / 2 - Rect.Width,
             Raylib.GetScreenHeight() / 2 - Rect.Height
@@ -60,8 +30,15 @@ public class Player : Sprite
         Active = false;
         float dt = Raylib.GetFrameTime();
         Vec2 mPos = Raylib.GetMousePosition();
-        var newRot = _pos.AngleTo(mPos) * (180 / float.Pi) + 90;
-        _rot = float.Lerp(_rot, newRot, (float)(dt * 5));
+        Vec2 newRot = Vec2.FromPolar(1, _pos.AngleTo(mPos) + float.Pi / 2);
+        /// Lerping it this way makes it always takes the shortest path
+        _rot = Vec2.Lerp(_rot, newRot, (float)0.05);
+        // This one is equivalent to the code above
+        // _rot = new Vec2(
+        //     float.Lerp(_rot.X, newRot.X, (float)0.1),
+        //     float.Lerp(_rot.Y, newRot.Y, (float)0.1)
+        // );
+
         Vel *= _friction;
         Imf.Progress();
         base.Update();
@@ -74,7 +51,7 @@ public class Player : Sprite
             new(0, 0, _texture.Width, _texture.Height),
             new(Rect.X, Rect.Y, Rect.Width, Rect.Height),
             Origin,
-            _rot, Color.White
+            _rot.Angle.ToDeg(), Color.White
         );
 
         Raylib.DrawRectangleLinesEx(

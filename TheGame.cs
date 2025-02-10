@@ -6,7 +6,7 @@ namespace meteor_escape;
 public class Game
 {
     private float _timer = 0;
-    private Timers.EnemieSpawner _spawner = new(10, true);
+    private Spawners.EnemieSpawner _spawner = new(10, true);
 
     public Game()
     { }
@@ -37,7 +37,7 @@ public class Game
         var mousePos = Raylib.GetMousePosition();
         Raylib.DrawCircle(
             (int)mousePos.X, (int)mousePos.Y,
-            5, new Color(186, 186, 186, 200)
+            5, new Color(186, 186, 186)
         );
     }
 

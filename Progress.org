@@ -1,2 +1,8 @@
 * Progress
- -TODO Immunity Frame for the Player and other sprites
+ - [X] Immunity Frame for the Player and other sprites
+ - [ ] Bullets
+ - [ ] Optimizing The World Object
+   - [ ] Sprite Type enum
+   - [ ] Stand-alone player memeber
+   - [ ] Stand-alone enemies list
+   - [ ] Stand-alone bullets list

@@ -5,6 +5,9 @@ namespace meteor_escape;
 
 public static class Extensions
 {
+    public static float ToRad(this float self) => self * (float.Pi / 180);
+    public static float ToDeg(this float self) => self * (180 / float.Pi);
+
     public static void Draw(this RectangleF rect, Raylib_cs.Color color)
     {
         Raylib.DrawRectangle(

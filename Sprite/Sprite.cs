@@ -7,11 +7,11 @@ public class Sprite
 {
     protected Vec2 _pos = Vec2.Zero;
     protected Vec2 _vel = Vec2.Zero;
-    protected float _rot = 0;
+    protected Vec2 _rot = Vec2.Zero;
 
     public Vec2 Pos { get => _pos; set => _pos = value; }
     public Vec2 Vel { get => _vel; set => _vel = value; }
-    public float Rot { get => _rot; set => _rot = value; }
+    public Vec2 Rot { get => _rot; set => _rot = value; }
     public virtual Vec2 Origin { get => new(Rect.Width / 2, Rect.Height / 2); }
     public virtual System.Drawing.RectangleF Rect { get => new(Pos.X, Pos.Y, 10, 10); }
 
@@ -34,7 +34,7 @@ public class Sprite
         Raylib.DrawRectanglePro(
             new(Rect.X, Rect.Y, Rect.Width, Rect.Height),
             new(Rect.Width / 2, Rect.Height / 2),
-            _rot,
+            _rot.Angle.ToDeg(),
             Color.Black
         );
     }

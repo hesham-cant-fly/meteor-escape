@@ -1,4 +1,4 @@
-namespace meteor_escape.Timers;
+namespace meteor_escape.Spawners;
 
 public class EnemieSpawner : Timer
 {

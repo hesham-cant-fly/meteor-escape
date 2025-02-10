@@ -106,6 +106,7 @@ public struct Vec2(float x, float y)
     public static implicit operator Vector2(Vec2 self) => new Vector2(self.X, self.Y);
     public static implicit operator Vec2(System.Numerics.Vector2 a) => new Vec2(a.X, a.Y);
     public static implicit operator PointF(Vec2 self) => new PointF(self.X, self.Y);
+    public static Vec2 Lerp(Vec2 a, Vec2 b, float amount) => a * (1 - amount) + b * amount;
     public static Vec2 Zero { get => new Vec2(0, 0); }
     public static Vec2 One { get => new Vec2(1, 1); }
     public static Vec2 UnitX { get => new Vec2(1, 0); }
