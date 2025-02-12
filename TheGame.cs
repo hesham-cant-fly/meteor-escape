@@ -6,7 +6,7 @@ namespace meteor_escape;
 public class Game
 {
     private float _timer = 0;
-    private Spawners.EnemieSpawner _spawner = new(10, true);
+    private Spawners.EnemieSpawner _spawner = new(1, true);
 
     public Game()
     { }
@@ -18,9 +18,7 @@ public class Game
 
     public void LoadContent()
     {
-        Globals.world = new World();
-
-        Globals.world.AddSprite(new Player());
+        Globals.world = new World(new Player());
     }
 
     public void Update()

@@ -1,6 +1,7 @@
 * Progress
  - [X] Immunity Frame for the Player and other sprites
  - [ ] Bullets
+* Optional
  - [ ] Optimizing The World Object
    - [ ] Sprite Type enum
    - [ ] Stand-alone player memeber

@@ -8,6 +8,10 @@ public class EnemieSpawner : Timer
 
     public override void Caller()
     {
-        Globals.world.AddSprite(new Enemie());
+        Enemie enemie = new Enemie();
+        enemie.Vel = Vec2.FromPolar(
+            50, enemie.Pos.AngleTo(Globals.world.Player.Pos)
+        );
+        Globals.world.AddEnemie(enemie);
     }
 }

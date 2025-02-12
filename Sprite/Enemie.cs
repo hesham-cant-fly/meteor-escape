@@ -8,14 +8,12 @@ public class Enemie : Sprite
     public float AttackDamage { get; private set; }
     public float Health { get; private set; }
 
+    public override SpriteKind Kind => SpriteKind.Enemie;
+
     public Enemie()
     {
-        var rnd = new Random();
         this.Pos = Game.GetRandomInScreenPosition();
         this.AttackDamage = 10;
-        // _vel = Vec2.FromPolar(
-        //     20, (float)rnd.NextDouble() * float.Pi * 2
-        // );
     }
 
     public override void Update()
@@ -30,7 +28,7 @@ public class Enemie : Sprite
 
     public override void OnCollide(int index, int otherIndex, Sprite other)
     {
-        if (other is Player)
+        if (other.Kind == SpriteKind.Player)
         {
             // ((Player)other).Active = true;
             ((Player)other).Damage(AttackDamage);

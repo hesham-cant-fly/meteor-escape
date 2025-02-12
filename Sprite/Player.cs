@@ -5,18 +5,23 @@ namespace meteor_escape;
 
 public class Player : Sprite
 {
-    protected Vec2 _acc = Vec2.One * 70;
+    protected Vec2 _acc = Vec2.One * 60;
     protected float _friction = 0.95F;
     protected Texture2D _texture = Raylib.LoadTexture("Assets/space_ship.png");
     public HealthBar Health { get; private set; }
     public ImmunityFrames Imf { get; private set; }
+    private float AttackSpeed = 0.1F;
+    private float AttackT = 0.1F;
     public bool Active = false;
 
-    public override System.Drawing.RectangleF Rect { get => new(Pos.X, Pos.Y, 100, 100); }
+    public override System.Drawing.RectangleF Rect => new(Pos.X, Pos.Y, 100, 100);
+    public override SpriteKind Kind => SpriteKind.Player;
+
+    public override System.Drawing.RectangleF HitBox => new(Pos.X - 70 / 2, Pos.Y - 70 / 2, 70, 70);
 
     public Player()
     {
-        Console.WriteLine(OriginRect.ToString());
+        Console.WriteLine(HitBox.ToString());
         this.Health = new HealthBar(100);
         this.Imf = new ImmunityFrames(20);
         this.Pos = new Vec2(
@@ -27,17 +32,12 @@ public class Player : Sprite
 
     public override void Update()
     {
-        Active = false;
         float dt = Raylib.GetFrameTime();
         Vec2 mPos = Raylib.GetMousePosition();
         Vec2 newRot = Vec2.FromPolar(1, _pos.AngleTo(mPos) + float.Pi / 2);
-        /// Lerping it this way makes it always takes the shortest path
         _rot = Vec2.Lerp(_rot, newRot, (float)0.05);
-        // This one is equivalent to the code above
-        // _rot = new Vec2(
-        //     float.Lerp(_rot.X, newRot.X, (float)0.1),
-        //     float.Lerp(_rot.Y, newRot.Y, (float)0.1)
-        // );
+
+        AttackT -= dt;
 
         Vel *= _friction;
         Imf.Progress();
@@ -55,7 +55,7 @@ public class Player : Sprite
         );
 
         Raylib.DrawRectangleLinesEx(
-            new Raylib_cs.Rectangle(Rect.X - Origin.X, Rect.Y - Origin.Y, Rect.Width, Rect.Height),
+            new Raylib_cs.Rectangle(HitBox.X, HitBox.Y, HitBox.Width, HitBox.Height),
             (float)2.0, Color.Lime
         );
 
@@ -88,7 +88,21 @@ public class Player : Sprite
         {
             Vel += _acc * Vec2.UnitX;
         }
-        // TODO: Bullets
+
+        if (Raylib.IsMouseButtonDown(MouseButton.Left))
+        {
+            if (AttackT <= 0)
+            {
+                Bullet bullet = new Bullet(
+                    Pos,
+                    _rot.Angle - float.Pi / 2
+                );
+                var normVel = bullet.Vel.ToNormalize();
+                bullet.Pos += normVel * 27.0F;
+                Globals.world.AddBullet(bullet);
+                AttackT = AttackSpeed;
+            }
+        }
     }
 
     public void Damage(float amount)

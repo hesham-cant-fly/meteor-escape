@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using Raylib_cs;
 
@@ -45,85 +46,143 @@ public class Entity
 }
 public class World
 {
-    private List<int> _removedEntitiesInd = new();
-    private List<Entity> _entities = new();
+    private List<Entity> _enemies = new();
+    private List<Entity> _bullets = new();
+    public Player Player;
     private QuadTree _currentQTree;
 
-    public void AddSprite(Sprite sprite) => _entities.Add(new(sprite));
+    public World(Player player)
+    {
+        this.Player = player;
+    }
+
+    public void AddEnemie(Sprite enemie) => _enemies.Add(new(enemie));
+    public void AddBullet(Sprite bullet) => _bullets.Add(new(bullet));
 
     public void Update()
     {
-        _removedEntitiesInd.Clear();
         _currentQTree = new QuadTree(new RectangleF(0, 0, Raylib.GetScreenWidth(), Raylib.GetScreenHeight()));
-        for (int i = 0; i < _entities.Count; i++)
+        Player.Update();
+        UpdateEnemies();
+        UpdateBullets();
+
+        CheckPlayerCollision();
+        CheckBulletsCollision();
+    }
+
+    private void UpdateEnemies()
+    {
+        for (int i = 0; i < _enemies.Count; i++)
         {
-            Entity entity = _entities[i];
+            Entity entity = _enemies[i];
             if (entity.Disabled)
                 continue;
             entity.Update();
-            _currentQTree.Insert(entity.UserData, i);
+            if (!_currentQTree.Insert(entity.UserData, i))
+                this.RemoveEnemieAt(i);
         }
+    }
 
-        /// O(n²) algorithm on 1000 object (very slow) 24 FPS
-        // foreach (var sprite in _sprites)
-        // {
-        //     foreach (var other in _sprites)
-        //     {
-        //         if (other != sprite && sprite.IsCollidingWith(other))
-        //         {
-        //             sprite.OnCollide(sprite);
-        //         }
-        //     }
-        // }
-
-        /// O(k) algorithm on 1000 object (fast) 60 FPS
-        foreach (var leaf in _currentQTree)
+    private void UpdateBullets()
+    {
+        for (int i = 0; i < _bullets.Count; i++)
         {
-            var sprite = leaf.Sprite;
-            RectangleF range = sprite.OriginRect;
-            range.Width *= 3;
-            range.Height *= 3;
-            range.X -= range.Width / 2;
-            range.Y -= range.Height / 2;
-            var others = _currentQTree.Query(range);
-            foreach (var other in others)
-            {
-                if (other.Sprite != sprite && sprite.IsCollidingWith(other.Sprite))
-                {
-                    sprite.OnCollide(leaf.Index, other.Index, other.Sprite);
-                }
-            }
+            Entity entity = _bullets[i];
+            if (entity.Disabled)
+                continue;
+            entity.Update();
+            if (!_currentQTree.Insert(entity.UserData, i))
+                this.RemoveBulletAt(i);
         }
     }
 
     public void Draw()
     {
-        foreach (var entity in _entities)
+        Player.Draw();
+        DrawEnemies();
+        DrawBullets();
+        _currentQTree.Draw();
+    }
+
+    private void DrawEnemies()
+    {
+        foreach (var entity in _enemies)
         {
             if (entity.Disabled) continue;
             entity.Draw();
         }
-        _currentQTree.Draw();
+    }
+
+    private void DrawBullets()
+    {
+        foreach (var entity in _bullets)
+        {
+            if (entity.Disabled) continue;
+            entity.Draw();
+        }
     }
 
     public void PostProcess()
     {
-        var j = _entities.Count - 1;
-        foreach (var i in _removedEntitiesInd)
-        {
-            Entity last = _entities[j--];
-            _entities[i] = last;
-        }
-        foreach (var _ in _removedEntitiesInd)
-            _entities.RemoveAt(_entities.Count - 1);
     }
 
-    public void RemoveAt(int i)
+    public void RemoveEnemieAt(int i)
     {
-        if (i < 0 || i >= _entities.Count) throw new IndexOutOfRangeException();
+        Debug.Assert(i >= 0, $"`i` is less than 0: '{i}'");
+        Debug.Assert(i < _enemies.Count, $"`i`: '{i}' more than `enemies.Count`: '{_enemies.Count}'");
 
-        _entities[i].Disable();
-        _removedEntitiesInd.Add(i);
+        _enemies.RemoveAt(i);
+    }
+
+    public void RemoveBulletAt(int i)
+    {
+        Debug.Assert(i >= 0, $"`i` is less than 0: '{i}'");
+        Debug.Assert(i < _bullets.Count, $"`i`: '{i}' more than `bullets.Count`: '{_bullets.Count}'");
+
+        _bullets.RemoveAt(i);
+    }
+
+    private void CheckPlayerCollision()
+    {
+        RectangleF range = Player.HitBox;
+        range.Width *= 3;
+        range.Height *= 3;
+        range.X -= range.Width / 2;
+        range.Y -= range.Height / 2;
+
+        var enemies = _currentQTree.Query(range);
+        foreach (var other in enemies)
+        {
+            if (other.Sprite.Kind != SpriteKind.Player && other.Sprite.Kind != SpriteKind.Bullet && Player.IsCollidingWith(other.Sprite))
+            {
+                Player.OnCollide(-1, other.Index, other.Sprite);
+                other.Sprite.OnCollide(other.Index, -1, Player);
+            }
+        }
+    }
+
+    private void CheckBulletsCollision()
+    {
+        for (int i = 0; i < _bullets.Count; i++)
+        {
+            var bulletEntity = _bullets[i];
+            var bullet = bulletEntity.UserData;
+            RectangleF range = bullet.HitBox;
+            range.Width *= 3;
+            range.Height *= 3;
+            range.X -= range.Width / 2;
+            range.Y -= range.Height / 2;
+
+            var enemies = _currentQTree.Query(range);
+            foreach (var other in enemies)
+            {
+                if (other.Sprite.Kind != SpriteKind.Bullet && bullet.IsCollidingWith(other.Sprite))
+                {
+                    bullet.OnCollide(i, other.Index, other.Sprite);
+                    other.Sprite.OnCollide(other.Index, i, bullet);
+                }
+            }
+        }
     }
 }
 
@@ -191,7 +250,7 @@ class QuadTree : IEnumerable<QuadTree.Leaf>
         {
             foreach (var leaf in _elements)
             {
-                if (range.IntersectsWith(leaf.Sprite.OriginRect))
+                if (range.IntersectsWith(leaf.Sprite.HitBox))
                 {
                     found.Add(leaf);
                 }
@@ -207,7 +266,7 @@ class QuadTree : IEnumerable<QuadTree.Leaf>
 
     public bool Insert(Sprite sprite, int index)
     {
-        if (!Bounds.IntersectsWith(sprite.OriginRect))
+        if (!Bounds.IntersectsWith(sprite.HitBox))
         {
             return false;
         }
